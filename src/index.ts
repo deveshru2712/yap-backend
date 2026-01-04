@@ -1,0 +1,68 @@
+import express, { NextFunction, Request, Response } from "express";
+import { pinoHttp } from "pino-http";
+import * as z from "zod";
+
+import { logger } from "./utils/pino";
+import { env } from "./config/env";
+import authRouter from "./routes/auth.routes";
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(
+  pinoHttp({
+    logger,
+    customProps: (req, res) => ({
+      // Add custom fields if needed
+    }),
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url,
+      }),
+      res: (res) => ({
+        statusCode: res.statusCode,
+      }),
+    },
+    // Don't log certain routes
+    autoLogging: {
+      // ignore: (req) => req.url === "/health",
+    },
+  })
+);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+// Your routes will go here
+app.use("/v1/api/auth", authRouter);
+// app.use("/api/messages", messageRoutes);
+
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+// Error handler
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof z.ZodError) {
+    logger.warn({ err: z.prettifyError(err) }, "Validation error");
+    return res.status(400).json({
+      error: "Validation failed",
+      details: z.prettifyError(err),
+    });
+  }
+  logger.error({ err }, "Unhandled error");
+  res.status(500).json({ error: "Internal server error" });
+});
+
+app.listen(env.PORT, () => {
+  logger.info(
+    { port: env.PORT, env: env.NODE_ENV },
+    "Server started successfully"
+  );
+});
