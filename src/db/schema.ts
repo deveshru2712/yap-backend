@@ -1,18 +1,31 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  uniqueIndex,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
+import { v7 as uuidv7 } from "uuid";
 
-export const user = pgTable("users", {
-  id: serial("id").primaryKey(),
-  userName: text("username").notNull(),
-  email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+export const userTable = pgTable(
+  "users",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    userName: text("username").notNull(),
+    email: text("email").notNull(),
+    password: text("password").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [uniqueIndex("email_idx").on(table.email)]
+);
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const schema = {
-  user,
-};
-
-export type InsertUser = typeof user.$inferInsert;
-export type SelectUser = typeof user.$inferSelect;
+export type InsertUser = typeof userTable.$inferInsert;
+export type SelectUser = typeof userTable.$inferSelect;

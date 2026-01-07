@@ -44,7 +44,10 @@ app.use("/v1/api/auth", authRouter);
 
 // 404 handler
 app.use((req, res, next) => {
-  res.status(404).json({ error: "Route not found" });
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
 });
 
 // Error handler
@@ -52,12 +55,18 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof z.ZodError) {
     logger.warn({ err: z.prettifyError(err) }, "Validation error");
     return res.status(400).json({
-      error: "Validation failed",
-      details: z.prettifyError(err),
+      success: false,
+      message: "Validation failed",
+      ...(env.NODE_ENV !== "production" && {
+        details: z.prettifyError(err),
+      }),
     });
   }
   logger.error({ err }, "Unhandled error");
-  res.status(500).json({ error: "Internal server error" });
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+  });
 });
 
 app.listen(env.PORT, () => {

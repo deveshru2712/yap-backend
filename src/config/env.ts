@@ -7,6 +7,7 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   DATABASE_URL: z.string(),
+  JWT_SECRET: z.string(),
 });
 
 const result = envSchema.safeParse(process.env);
