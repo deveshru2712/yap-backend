@@ -13,14 +13,12 @@ export const zodValidator =
           id: req.id,
           method: req.method,
           url: req.originalUrl,
-          errors: z.prettifyError(result.error),
+          issues: result.error.issues,
         },
         "Request validation failed"
       );
 
-      return res.status(400).json({
-        errors: z.prettifyError(result.error),
-      });
+      return next(result.error);
     }
 
     req.body = result.data;

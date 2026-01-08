@@ -1,14 +1,18 @@
 import * as z from "zod";
 
 export const signUpBodySchema = z.object({
-  userName: z.string("Username should be a string"),
-  email: z.email("Please provide a valid email"),
-  password: z.string().min(6, "Password must contain atleast 6 character"),
+  userName: z.string({ error: "Username should be a string" }),
+  email: z.email({ error: "Please provide a valid email" }),
+  password: z
+    .string()
+    .min(6, { error: "Password must contain atleast 6 character" }),
 });
 
 export const signInBodySchema = z.object({
-  email: z.email("Please provide a valid email"),
-  password: z.string().min(6, "Password must contain atleast 6 character"),
+  email: z.email({ error: "Please provide a valid email" }),
+  password: z
+    .string()
+    .min(6, { error: "Password must contain atleast 6 character" }),
 });
 
 export type signUpBody = z.infer<typeof signUpBodySchema>;

@@ -5,6 +5,7 @@ import * as z from "zod";
 import { logger } from "./utils/pino";
 import { env } from "./config/env";
 import authRouter from "./routes/auth.routes";
+import { formatZodError } from "./utils/zodErrorFormatter";
 
 const app = express();
 
@@ -58,7 +59,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       success: false,
       message: "Validation failed",
       ...(env.NODE_ENV !== "production" && {
-        details: z.prettifyError(err),
+        details: formatZodError(err),
       }),
     });
   }
