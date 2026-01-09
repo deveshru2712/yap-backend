@@ -17,7 +17,7 @@ export const verifySession = (
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
     req.user = {
-      id: payload.sub,
+      id: payload.id,
       email: payload.email,
       userName: payload.userName,
     };

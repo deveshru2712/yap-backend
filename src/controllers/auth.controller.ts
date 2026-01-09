@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -139,7 +139,7 @@ export const logOut: RequestHandler = (req, res, next) => {
   }
 };
 
-export const verify: RequestHandler = (req, res, next) => {
+export const verify = (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({
