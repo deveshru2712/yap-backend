@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
+import cookieParser from "cookie-parser";
 import { pinoHttp } from "pino-http";
 import * as z from "zod";
 
@@ -11,6 +12,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   pinoHttp({
     logger,
@@ -53,6 +55,14 @@ app.use((req, res, next) => {
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+    logger.warn({ err }, "JWT verification error");
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+
   if (err instanceof z.ZodError) {
     logger.warn({ err: z.prettifyError(err) }, "Validation error");
     return res.status(400).json({
