@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import { pinoHttp } from "pino-http";
+import cors from "cors";
 import * as z from "zod";
 
 import { logger } from "./utils/pino";
@@ -13,6 +14,12 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 app.use(
   pinoHttp({
     logger,

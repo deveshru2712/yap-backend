@@ -7,8 +7,8 @@ import { verifySession } from "../middleware/verifySession";
 
 const router = express.Router();
 
-router.post("/signup", zodValidator(signUpBodySchema), authController.signUp);
-router.post("/signin", zodValidator(signInBodySchema), authController.signIn);
+router.post("/sign-up", zodValidator(signUpBodySchema), authController.signUp);
+router.post("/sign-in", zodValidator(signInBodySchema), authController.signIn);
 router.post("/logout", authController.logOut);
 
 router.get("/verify", verifySession, authController.verify);
