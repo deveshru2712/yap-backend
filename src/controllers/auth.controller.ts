@@ -57,10 +57,7 @@ export const signUp: RequestHandler<
       });
     }
 
-    logger.info(
-      { userId: newUser.id, email: newUser.email },
-      "User signed up successfully"
-    );
+    logger.info({ userId: newUser.id }, "User signed up successfully");
 
     // Set auth cookie
     authCookie(
