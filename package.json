@@ -8,7 +8,8 @@
     "build": "tsc -b",
     "dev": "nodemon --exec ts-node --files src/index.ts",
     "db:migrate": "bunx drizzle-kit push",
-    "db:drop": "bunx drizzle-kit drop"
+    "db:drop": "bunx drizzle-kit drop",
+    "studio": "bunx drizzle-kit studio"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,19 +1,23 @@
 import {
-  uniqueIndex,
   pgTable,
   text,
   timestamp,
   uuid,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 
-export const userTable = pgTable(
+import conversationTable from "./conversation";
+import messageTable from "./message";
+
+const userTable = pgTable(
   "users",
   {
     id: uuid("id")
       .primaryKey()
       .$defaultFn(() => uuidv7()),
-    userName: text("username").notNull(),
+    userName: text("username").notNull().unique(),
     email: text("email").notNull(),
     password: text("password").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -24,8 +28,12 @@ export const userTable = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [uniqueIndex("email_idx").on(table.email)]
+  (table) => [uniqueIndex("users_email_idx").on(table.email)]
 );
 
-export type InsertUser = typeof userTable.$inferInsert;
-export type SelectUser = typeof userTable.$inferSelect;
+export const userRelations = relations(userTable, ({ many }) => ({
+  conversations: many(conversationTable),
+  messages: many(messageTable),
+}));
+
+export default userTable;
