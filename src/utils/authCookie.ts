@@ -6,6 +6,7 @@ interface UserPayload {
   id: string;
   userName: string;
   email: string;
+  tokenVersion: number;
 }
 
 export const authCookie = (user: UserPayload, res: Response): void => {
@@ -16,6 +17,7 @@ export const authCookie = (user: UserPayload, res: Response): void => {
       id: user.id,
       userName: user.userName,
       email: user.email,
+      tokenVersion: user.tokenVersion,
     },
     env.JWT_SECRET,
     {

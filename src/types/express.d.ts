@@ -5,6 +5,7 @@ declare global {
         id: string;
         userName: string;
         email: string;
+        tokenVerstion: number;
       } | null;
     }
   }

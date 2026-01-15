@@ -4,6 +4,7 @@ import {
   timestamp,
   uuid,
   uniqueIndex,
+  integer,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -21,6 +22,7 @@ const userTable = pgTable(
     email: text("email").notNull().unique(),
     password: text("password").notNull(),
     profilepic: text("profile_pic"),
+    tokenversion: integer("token_version").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
