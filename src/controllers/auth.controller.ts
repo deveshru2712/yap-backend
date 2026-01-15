@@ -15,7 +15,7 @@ export const signUp: RequestHandler<
   signUpBody,
   unknown
 > = async (req, res, next) => {
-  const { userName, email, password } = req.body;
+  const { username, email, password } = req.body;
 
   try {
     // Check if user already exists
@@ -27,7 +27,7 @@ export const signUp: RequestHandler<
       logger.warn({ email }, "Signup attempt with existing email");
       return res.status(409).json({
         success: false,
-        message: "User already exists",
+        message: "User already exists Please use different credentials",
       });
     }
 
@@ -40,13 +40,13 @@ export const signUp: RequestHandler<
       .insert(userTable)
       .values({
         email,
-        userName,
+        username,
         password: hashPassword,
       })
       .returning({
         id: userTable.id,
         email: userTable.email,
-        userName: userTable.userName,
+        userName: userTable.username,
       });
 
     if (!newUser) {
@@ -118,7 +118,7 @@ export const signIn: RequestHandler<
       {
         id: user.id,
         email: user.email,
-        userName: user.userName,
+        userName: user.username,
       },
       res
     );

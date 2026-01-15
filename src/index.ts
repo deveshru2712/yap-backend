@@ -7,6 +7,8 @@ import * as z from "zod";
 import { logger } from "./utils/pino";
 import { env } from "./config/env";
 import authRouter from "./routes/auth.routes";
+import messageRouter from "./routes/message.routes";
+import userRouter from "./routes/user.routes";
 import { formatZodError } from "./utils/zodErrorFormatter";
 
 const app = express();
@@ -50,7 +52,8 @@ app.get("/health", (req, res) => {
 
 // Your routes will go here
 app.use("/v1/api/auth", authRouter);
-// app.use("/api/messages", messageRoutes);
+app.use("/v1/api/message", messageRouter);
+app.use("/v1/api/user", userRouter);
 
 // 404 handler
 app.use((req, res, next) => {

@@ -7,8 +7,10 @@
     "start": "node ./dist/index.js",
     "build": "tsc -b",
     "dev": "nodemon --exec ts-node --files src/index.ts",
-    "db:migrate": "bunx drizzle-kit push",
+    "db:push": "bunx drizzle-kit push",
     "db:drop": "bunx drizzle-kit drop",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bunx drizzle-kit migrate",
     "studio": "bunx drizzle-kit studio"
   },
   "devDependencies": {

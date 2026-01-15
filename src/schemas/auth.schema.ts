@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 export const signUpBodySchema = z.object({
-  userName: z.string({ error: "Username should be a string" }),
+  username: z.string({ error: "Username should be a string" }),
   email: z.email({ error: "Please provide a valid email" }),
   password: z
     .string()

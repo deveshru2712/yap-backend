@@ -17,9 +17,10 @@ const userTable = pgTable(
     id: uuid("id")
       .primaryKey()
       .$defaultFn(() => uuidv7()),
-    userName: text("username").notNull().unique(),
-    email: text("email").notNull(),
+    username: text("username").notNull(),
+    email: text("email").notNull().unique(),
     password: text("password").notNull(),
+    profilepic: text("profile_pic"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
@@ -28,7 +29,7 @@ const userTable = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [uniqueIndex("users_email_idx").on(table.email)]
+  (table) => [uniqueIndex("username_idx").on(table.username)]
 );
 
 export const userRelations = relations(userTable, ({ many }) => ({
