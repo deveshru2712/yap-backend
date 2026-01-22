@@ -4,7 +4,7 @@ import { env } from "../config/env";
 
 interface UserPayload {
   id: string;
-  userName: string;
+  username: string;
   email: string;
   tokenVersion: number;
 }
@@ -15,7 +15,7 @@ export const authCookie = (user: UserPayload, res: Response): void => {
   const token = jwt.sign(
     {
       id: user.id,
-      userName: user.userName,
+      username: user.username,
       email: user.email,
       tokenVersion: user.tokenVersion,
     },

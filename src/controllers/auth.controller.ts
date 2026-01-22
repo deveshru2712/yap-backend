@@ -46,7 +46,7 @@ export const signUp: RequestHandler<
       .returning({
         id: userTable.id,
         email: userTable.email,
-        userName: userTable.username,
+        username: userTable.username,
         tokenVersion: userTable.tokenversion,
       });
 
@@ -65,7 +65,7 @@ export const signUp: RequestHandler<
       {
         id: newUser.id,
         email: newUser.email,
-        userName: newUser.userName,
+        username: newUser.username,
         tokenVersion: newUser.tokenVersion,
       },
       res
@@ -120,7 +120,7 @@ export const signIn: RequestHandler<
       {
         id: user.id,
         email: user.email,
-        userName: user.username,
+        username: user.username,
         tokenVersion: user.tokenversion,
       },
       res

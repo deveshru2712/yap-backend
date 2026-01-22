@@ -22,7 +22,7 @@ export const verifySession = async (
     const payload = jwt.verify(token, env.JWT_SECRET) as {
       id: string;
       email: string;
-      userName: string;
+      username: string;
       tokenVersion: number;
     };
 
@@ -42,7 +42,7 @@ export const verifySession = async (
     req.user = {
       id: payload.id,
       email: payload.email,
-      userName: payload.userName,
+      username: payload.username,
       tokenVerstion: payload.tokenVersion,
     };
     next();
