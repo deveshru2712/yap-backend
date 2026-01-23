@@ -9,9 +9,9 @@ import { userTable } from "../db/schema";
 export const verifySession = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const token = req.cookies?.yapToken;
+  const token = req.cookies?.yap_token;
 
   if (!token) {
     req.user = null;
@@ -19,12 +19,7 @@ export const verifySession = async (
   }
 
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as {
-      id: string;
-      email: string;
-      username: string;
-      tokenVersion: number;
-    };
+    const payload = jwt.verify(token, env.JWT_SECRET) as AuthTokenPayload;
 
     const user = await db.query.userTable.findFirst({
       where: eq(userTable.id, payload.id),

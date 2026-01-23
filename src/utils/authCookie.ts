@@ -2,14 +2,7 @@ import { Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 
-interface UserPayload {
-  id: string;
-  username: string;
-  email: string;
-  tokenVersion: number;
-}
-
-export const authCookie = (user: UserPayload, res: Response): void => {
+export const authCookie = (user: AuthTokenPayload, res: Response): void => {
   if (!user) return;
 
   const token = jwt.sign(
@@ -22,10 +15,10 @@ export const authCookie = (user: UserPayload, res: Response): void => {
     env.JWT_SECRET,
     {
       expiresIn: "7d",
-    }
+    },
   );
 
-  res.cookie("yapToken", token, {
+  res.cookie("yap_token", token, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: "strict",

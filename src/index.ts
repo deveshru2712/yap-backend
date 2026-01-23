@@ -10,8 +10,7 @@ import authRouter from "./routes/auth.routes";
 import messageRouter from "./routes/message.routes";
 import userRouter from "./routes/user.routes";
 import { formatZodError } from "./utils/zodErrorFormatter";
-
-const app = express();
+import { server, app } from "./socket";
 
 // Middleware
 app.use(express.json());
@@ -20,7 +19,7 @@ app.use(
   cors({
     origin: env.FRONTEND_URL,
     credentials: true,
-  })
+  }),
 );
 app.use(
   pinoHttp({
@@ -42,7 +41,7 @@ app.use(
     autoLogging: {
       // ignore: (req) => req.url === "/health",
     },
-  })
+  }),
 );
 
 // Health check endpoint
@@ -90,9 +89,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-app.listen(env.PORT, () => {
+server.listen(env.PORT, () => {
   logger.info(
     { port: env.PORT, env: env.NODE_ENV },
-    "Server started successfully"
+    "Server started successfully",
   );
 });

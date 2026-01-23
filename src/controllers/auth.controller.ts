@@ -68,7 +68,7 @@ export const signUp: RequestHandler<
         username: newUser.username,
         tokenVersion: newUser.tokenVersion,
       },
-      res
+      res,
     );
 
     return res.status(201).json({
@@ -106,7 +106,7 @@ export const signIn: RequestHandler<
     if (!checkPassword) {
       logger.warn(
         { email, userId: user.id },
-        "Failed login attempt - incorrect password"
+        "Failed login attempt - incorrect password",
       );
       return res.status(401).json({
         success: false,
@@ -123,7 +123,7 @@ export const signIn: RequestHandler<
         username: user.username,
         tokenVersion: user.tokenversion,
       },
-      res
+      res,
     );
 
     return res.status(200).json({
@@ -140,7 +140,7 @@ export const logOut: RequestHandler = (req, res, next) => {
   try {
     const userId = req.user?.id;
 
-    res.cookie("yapToken", "", {
+    res.cookie("yap_token", "", {
       expires: new Date(0),
       httpOnly: true,
       sameSite: "strict",
