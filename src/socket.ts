@@ -7,13 +7,10 @@ import jwt from "jsonwebtoken";
 import { logger } from "./utils/pino";
 import { env } from "./config/env";
 
-// creating an express instance
 export const app = express();
-
-// creating an http server and attaching express to it
+// creating an http server
 export const server = createServer(app);
 
-// attaching the socket server to the same http server
 export const io = new Server(server, {
   cors: {
     origin: env.FRONTEND_URL,
@@ -79,6 +76,16 @@ io.on("connection", (socket) => {
     },
     "User connected via socket",
   );
+
+  socket.on("msg", (data) => {
+    logger.info(
+      {
+        senderId: data.senderId,
+        content: data.content,
+      },
+      "Message send",
+    );
+  });
 
   socket.on("disconnect", (reason) => {
     logger.info(
