@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { logger } from "../utils/pino";
 import db from "../db/db";
 import { eq } from "drizzle-orm";
-import { userTable } from "../db/schema";
+import { schema } from "../db/schema/";
 
 export const verifySession = async (
   req: Request,
@@ -21,8 +21,8 @@ export const verifySession = async (
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as AuthTokenPayload;
 
-    const user = await db.query.userTable.findFirst({
-      where: eq(userTable.id, payload.id),
+    const user = await db.query.user.findFirst({
+      where: eq(schema.user.id, payload.id),
       columns: { tokenversion: true },
     });
 

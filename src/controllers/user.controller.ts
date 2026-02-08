@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { and, ilike, ne } from "drizzle-orm";
 
-import { userTable } from "../db/schema";
+import { schema } from "../db/schema/";
 import { userSearchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
 import db from "../db/db";
@@ -19,10 +19,10 @@ export const searchUser: RequestHandler<
 
   try {
     // fetching the userlist
-    const userList = await db.query.userTable.findMany({
+    const userList = await db.query.user.findMany({
       where: and(
-        ilike(userTable.username, `${username}%`),
-        ne(userTable.id, currentUser.id)
+        ilike(schema.user.username, `${username}%`),
+        ne(schema.user.id, currentUser.id),
       ),
       columns: {
         id: true,
@@ -38,7 +38,7 @@ export const searchUser: RequestHandler<
         search: username,
         resultCount: userList.length,
       },
-      "User search completed successfully"
+      "User search completed successfully",
     );
 
     // returning the userlist

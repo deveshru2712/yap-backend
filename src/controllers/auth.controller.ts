@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 import { env } from "../config/env";
 import { signInBody, signUpBody } from "../schemas/auth.schema";
 import db from "../db/db";
-import { userTable } from "../db/schema";
+import { schema } from "../db/schema";
 import { authCookie } from "../utils/authCookie";
 import { logger } from "../utils/pino";
 
@@ -19,8 +19,8 @@ export const signUp: RequestHandler<
 
   try {
     // Check if user already exists
-    const existingUser = await db.query.userTable.findFirst({
-      where: eq(userTable.email, email),
+    const existingUser = await db.query.user.findFirst({
+      where: eq(schema.user.email, email),
     });
 
     if (existingUser) {
@@ -37,17 +37,17 @@ export const signUp: RequestHandler<
 
     // Create user
     const [newUser] = await db
-      .insert(userTable)
+      .insert(schema.user)
       .values({
         email,
         username,
         password: hashPassword,
       })
       .returning({
-        id: userTable.id,
-        email: userTable.email,
-        username: userTable.username,
-        tokenVersion: userTable.tokenversion,
+        id: schema.user.id,
+        email: schema.user.email,
+        username: schema.user.username,
+        tokenVersion: schema.user.tokenversion,
       });
 
     if (!newUser) {
@@ -90,8 +90,8 @@ export const signIn: RequestHandler<
   const { email, password } = req.body;
 
   try {
-    const user = await db.query.userTable.findFirst({
-      where: eq(userTable.email, email),
+    const user = await db.query.user.findFirst({
+      where: eq(schema.user.email, email),
     });
 
     if (!user) {
