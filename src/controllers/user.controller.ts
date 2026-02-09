@@ -15,7 +15,16 @@ export const searchUser: RequestHandler<
   const { username } = req.query;
   const currentUser = req.user;
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    logger.warn(
+      { unauthorized: "user not loggged in" },
+      "cannot search for user",
+    );
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
 
   try {
     // fetching the userlist

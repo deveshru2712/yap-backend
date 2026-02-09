@@ -11,7 +11,7 @@ router.get(
   "/",
   zodValidator(userSearchQuerySchema, "query"),
   verifySession,
-  userController.searchUser
+  userController.searchUser,
 );
 
 export default router;
