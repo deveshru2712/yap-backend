@@ -1,10 +1,10 @@
 import { RequestHandler } from "express";
 import { and, ilike, ne } from "drizzle-orm";
 
-import { schema } from "../db/schema/";
+import { schema } from "../db/schema/schema";
 import { userSearchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
-import db from "../db/db";
+import db from "../db/drizzle";
 
 export const searchUser: RequestHandler<
   unknown,

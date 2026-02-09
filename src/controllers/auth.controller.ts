@@ -4,8 +4,8 @@ import bcrypt from "bcrypt";
 
 import { env } from "../config/env";
 import { signInBody, signUpBody } from "../schemas/auth.schema";
-import db from "../db/db";
-import { schema } from "../db/schema";
+import db from "../db/drizzle";
+import { schema } from "../db/schema/schema";
 import { authCookie } from "../utils/authCookie";
 import { logger } from "../utils/pino";
 
@@ -19,6 +19,7 @@ export const signUp: RequestHandler<
 
   try {
     // Check if user already exists
+
     const existingUser = await db.query.user.findFirst({
       where: eq(schema.user.email, email),
     });

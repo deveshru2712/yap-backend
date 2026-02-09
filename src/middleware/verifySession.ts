@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { env } from "../config/env";
-import jwt from "jsonwebtoken";
-import { logger } from "../utils/pino";
-import db from "../db/db";
 import { eq } from "drizzle-orm";
-import { schema } from "../db/schema/";
+import jwt from "jsonwebtoken";
+
+import { env } from "../config/env";
+import { logger } from "../utils/pino";
+import db from "../db/drizzle";
+import { schema } from "../db/schema/schema";
 
 export const verifySession = async (
   req: Request,

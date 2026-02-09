@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { v7 as uuidv7 } from "uuid";
 
-const user = pgTable(
+export const user = pgTable(
   "users",
   {
     id: uuid("id")
@@ -31,7 +31,7 @@ const user = pgTable(
   (table) => [uniqueIndex("username_idx").on(table.username)],
 );
 
-const conversation = pgTable("conversations", {
+export const conversation = pgTable("conversations", {
   id: uuid("id")
     .primaryKey()
     .$defaultFn(() => uuidv7()),
@@ -48,7 +48,7 @@ const conversation = pgTable("conversations", {
     .notNull(),
 });
 
-const conversationParticipants = pgTable(
+export const conversationParticipants = pgTable(
   "conversation_participants",
   {
     id: uuid("id")
@@ -78,7 +78,7 @@ const conversationParticipants = pgTable(
   ],
 );
 
-const message = pgTable(
+export const message = pgTable(
   "messages",
   {
     id: uuid("id")
@@ -104,9 +104,4 @@ const message = pgTable(
   ],
 );
 
-export const schema = {
-  user,
-  conversation,
-  conversationParticipants,
-  message,
-};
+export const schema = { user, conversation, conversationParticipants, message };
