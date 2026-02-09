@@ -1,11 +1,11 @@
 import {
+  index,
+  integer,
   pgTable,
   text,
   timestamp,
-  uuid,
   uniqueIndex,
-  integer,
-  index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { v7 as uuidv7 } from "uuid";
 
@@ -28,7 +28,7 @@ export const user = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [uniqueIndex("username_idx").on(table.username)],
+  (table) => [uniqueIndex("username_idx").on(table.username)]
 );
 
 export const conversation = pgTable("conversations", {
@@ -69,13 +69,13 @@ export const conversationParticipants = pgTable(
   (table) => [
     index("conversation_participants_user_idx").on(table.userId),
     index("conversation_participants_conversation_idx").on(
-      table.conversationId,
+      table.conversationId
     ),
     uniqueIndex("conversation_participants_unique").on(
       table.conversationId,
-      table.userId,
+      table.userId
     ),
-  ],
+  ]
 );
 
 export const message = pgTable(
@@ -101,7 +101,7 @@ export const message = pgTable(
   (table) => [
     index("messages_conversation_idx").on(table.conversationId),
     index("messages_created_at_idx").on(table.createdAt),
-  ],
+  ]
 );
 
 export const schema = { user, conversation, conversationParticipants, message };

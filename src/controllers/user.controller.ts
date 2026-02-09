@@ -1,10 +1,10 @@
-import { RequestHandler } from "express";
 import { and, ilike, ne } from "drizzle-orm";
+import { RequestHandler } from "express";
 
+import db from "../db/drizzle";
 import { schema } from "../db/schema/schema";
 import { userSearchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
-import db from "../db/drizzle";
 
 export const searchUser: RequestHandler<
   unknown,
@@ -18,7 +18,7 @@ export const searchUser: RequestHandler<
   if (!currentUser) {
     logger.warn(
       { unauthorized: "user not loggged in" },
-      "cannot search for user",
+      "cannot search for user"
     );
     return res.status(401).json({
       success: false,
@@ -31,7 +31,7 @@ export const searchUser: RequestHandler<
     const userList = await db.query.user.findMany({
       where: and(
         ilike(schema.user.username, `${username}%`),
-        ne(schema.user.id, currentUser.id),
+        ne(schema.user.id, currentUser.id)
       ),
       columns: {
         id: true,
@@ -47,7 +47,7 @@ export const searchUser: RequestHandler<
         search: username,
         resultCount: userList.length,
       },
-      "User search completed successfully",
+      "User search completed successfully"
     );
 
     // returning the userlist

@@ -1,9 +1,9 @@
 import express from "express";
 
-import { zodValidator } from "../middleware/validationMiddleware";
-import { signInBodySchema, signUpBodySchema } from "../schemas/auth.schema";
 import * as authController from "../controllers/auth.controller";
+import { zodValidator } from "../middleware/validationMiddleware";
 import { verifySession } from "../middleware/verifySession";
+import { signInBodySchema, signUpBodySchema } from "../schemas/auth.schema";
 
 const router = express.Router();
 

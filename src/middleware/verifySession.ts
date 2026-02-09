@@ -1,16 +1,16 @@
-import { Request, Response, NextFunction } from "express";
 import { eq } from "drizzle-orm";
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 import { env } from "../config/env";
-import { logger } from "../utils/pino";
 import db from "../db/drizzle";
 import { schema } from "../db/schema/schema";
+import { logger } from "../utils/pino";
 
 export const verifySession = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   const token = req.cookies?.yap_token;
 

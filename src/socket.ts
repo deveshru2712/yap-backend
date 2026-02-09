@@ -1,11 +1,11 @@
+import * as cookie from "cookie";
 import express from "express";
+import jwt from "jsonwebtoken";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
-import * as cookie from "cookie";
-import jwt from "jsonwebtoken";
 
-import { logger } from "./utils/pino";
 import { env } from "./config/env";
+import { logger } from "./utils/pino";
 
 export const app = express();
 // creating an http server
@@ -26,7 +26,7 @@ io.use((socket, next) => {
     if (!cookieHeader) {
       logger.warn(
         { socketId: socket.id, ip: socket.handshake.address },
-        "Socket connection rejected: no cookies",
+        "Socket connection rejected: no cookies"
       );
       return next(new Error("Authentication required"));
     }
@@ -37,7 +37,7 @@ io.use((socket, next) => {
     if (!token) {
       logger.warn(
         { socketId: socket.id, ip: socket.handshake.address },
-        "Socket connection rejected: missing yap_token",
+        "Socket connection rejected: missing yap_token"
       );
       return next(new Error("Authentication required"));
     }
@@ -51,7 +51,7 @@ io.use((socket, next) => {
         socketId: socket.id,
         userId: payload.id,
       },
-      "Socket authenticated",
+      "Socket authenticated"
     );
 
     next();
@@ -61,7 +61,7 @@ io.use((socket, next) => {
         socketId: socket.id,
         error: err instanceof Error ? err.message : err,
       },
-      "Socket authentication failed",
+      "Socket authentication failed"
     );
 
     next(new Error("Authentication required"));
@@ -74,7 +74,7 @@ io.on("connection", (socket) => {
       socketId: socket.id,
       userId: socket.data.user.id,
     },
-    "User connected via socket",
+    "User connected via socket"
   );
 
   socket.on("msg", (data) => {
@@ -83,7 +83,7 @@ io.on("connection", (socket) => {
         senderId: data.senderId,
         content: data.content,
       },
-      "Message send",
+      "Message send"
     );
   });
 
@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
         userId: socket.data.user.id,
         reason,
       },
-      "User disconnected from socket",
+      "User disconnected from socket"
     );
   });
 });

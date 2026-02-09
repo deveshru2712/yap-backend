@@ -1,9 +1,9 @@
-import { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
+import { RequestHandler } from "express";
 
-import { logger } from "../utils/pino";
 import db from "../db/drizzle";
 import { schema } from "../db/schema/schema";
+import { logger } from "../utils/pino";
 
 export const recentConversation: RequestHandler = async (req, res, next) => {
   try {
@@ -19,8 +19,8 @@ export const recentConversation: RequestHandler = async (req, res, next) => {
         schema.conversation,
         eq(
           schema.conversationParticipants.conversationId,
-          schema.conversation.id,
-        ),
+          schema.conversation.id
+        )
       )
       .where(eq(schema.conversationParticipants.userId, req.user.id));
   } catch (error) {

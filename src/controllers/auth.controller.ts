@@ -1,11 +1,11 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
-import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import { eq } from "drizzle-orm";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 
 import { env } from "../config/env";
-import { signInBody, signUpBody } from "../schemas/auth.schema";
 import db from "../db/drizzle";
 import { schema } from "../db/schema/schema";
+import { signInBody, signUpBody } from "../schemas/auth.schema";
 import { authCookie } from "../utils/authCookie";
 import { logger } from "../utils/pino";
 
@@ -69,7 +69,7 @@ export const signUp: RequestHandler<
         username: newUser.username,
         tokenVersion: newUser.tokenVersion,
       },
-      res,
+      res
     );
 
     return res.status(201).json({
@@ -107,7 +107,7 @@ export const signIn: RequestHandler<
     if (!checkPassword) {
       logger.warn(
         { email, userId: user.id },
-        "Failed login attempt - incorrect password",
+        "Failed login attempt - incorrect password"
       );
       return res.status(401).json({
         success: false,
@@ -124,7 +124,7 @@ export const signIn: RequestHandler<
         username: user.username,
         tokenVersion: user.tokenversion,
       },
-      res,
+      res
     );
 
     return res.status(200).json({

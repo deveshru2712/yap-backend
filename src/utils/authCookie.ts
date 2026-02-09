@@ -1,5 +1,6 @@
 import { Response } from "express";
 import jwt from "jsonwebtoken";
+
 import { env } from "../config/env";
 
 export const authCookie = (user: AuthTokenPayload, res: Response): void => {
@@ -15,7 +16,7 @@ export const authCookie = (user: AuthTokenPayload, res: Response): void => {
     env.JWT_SECRET,
     {
       expiresIn: "7d",
-    },
+    }
   );
 
   res.cookie("yap_token", token, {
