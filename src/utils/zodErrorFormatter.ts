@@ -1,4 +1,4 @@
-import * as z from "zod";
+import z from "zod";
 
 export const formatZodError = (error: z.ZodError) => {
   const formatted: Record<string, string> = {};

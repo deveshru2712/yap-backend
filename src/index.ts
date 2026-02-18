@@ -2,7 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { pinoHttp } from "pino-http";
-import * as z from "zod";
+import z from "zod";
 
 import { env } from "./config/env";
 import authRouter from "./routes/auth.routes";

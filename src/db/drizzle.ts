@@ -1,17 +1,9 @@
-import { Pool } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 
-import { env } from "../config/env";
 import { schema } from "./schema/schema";
 
-const pool = new Pool({
-  connectionString: env.DATABASE_URL,
-  max: 5,
-});
-
-const db = drizzle(pool, {
-  schema,
-  // logger: true,
-});
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql, { schema });
 
 export default db;

@@ -1,4 +1,4 @@
-import * as z from "zod";
+import z from "zod";
 
 export const sendMessageQuerySchema = z.object({
   receiverId: z.string().trim().min(1, "UserId is required"),

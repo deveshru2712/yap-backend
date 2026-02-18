@@ -1,7 +1,7 @@
-import * as z from "zod";
+import z from "zod";
 
-export const userSearchQuerySchema = z.object({
-  username: z.string().trim().min(1, "Username is required"),
+export const searchQuerySchema = z.object({
+  query: z.string().trim().min(1, "Username is required"),
 });
 
-export type userSearchQuery = z.infer<typeof userSearchQuerySchema>;
+export type searchQuery = z.infer<typeof searchQuerySchema>;

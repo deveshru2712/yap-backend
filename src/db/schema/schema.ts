@@ -18,7 +18,7 @@ export const user = pgTable(
     username: text("username").notNull(),
     email: text("email").notNull().unique(),
     password: text("password").notNull(),
-    profilepic: text("profile_pic"),
+    avatar: text("avatar"),
     tokenversion: integer("token_version").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .$defaultFn(() => new Date())

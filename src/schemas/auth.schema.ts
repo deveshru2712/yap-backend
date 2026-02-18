@@ -1,4 +1,4 @@
-import * as z from "zod";
+import z from "zod";
 
 export const signUpBodySchema = z.object({
   username: z.string({ error: "Username should be a string" }),

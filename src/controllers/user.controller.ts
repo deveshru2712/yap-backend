@@ -1,60 +1,117 @@
-import { and, ilike, ne } from "drizzle-orm";
+import { and, eq, ilike, inArray, not } from "drizzle-orm";
 import { RequestHandler } from "express";
 
 import db from "../db/drizzle";
-import { schema } from "../db/schema/schema";
-import { userSearchQuery } from "../schemas/user.schema";
+import {
+  conversation,
+  conversationParticipants,
+  user,
+} from "../db/schema/schema";
+import { searchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
 
 export const searchUser: RequestHandler<
   unknown,
   unknown,
   unknown,
-  userSearchQuery
+  searchQuery
 > = async (req, res, next) => {
-  const { username } = req.query;
-  const currentUser = req.user;
-
-  if (!currentUser) {
-    logger.warn(
-      { unauthorized: "user not loggged in" },
-      "cannot search for user"
-    );
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-    });
-  }
-
   try {
-    // fetching the userlist
-    const userList = await db.query.user.findMany({
-      where: and(
-        ilike(schema.user.username, `${username}%`),
-        ne(schema.user.id, currentUser.id)
-      ),
-      columns: {
-        id: true,
-        username: true,
-        profilepic: true,
-      },
-      limit: 10,
-    });
+    const { query } = req.query;
+    const currentUser = req.user;
 
-    // logging succcess
-    logger.info(
-      {
-        search: username,
-        resultCount: userList.length,
-      },
-      "User search completed successfully"
-    );
+    if (!currentUser) {
+      logger.warn(
+        { unauthorized: "user not logged in" },
+        "cannot search for user"
+      );
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-    // returning the userlist
+    // get the user with matching username
+    const users = await db
+      .select({
+        id: user.id,
+        name: user.username,
+        avatar: user.avatar,
+      })
+      .from(user)
+      .where(
+        and(ilike(user.username, `${query}%`), not(eq(user.id, currentUser.id)))
+      )
+      .limit(10);
+
+    // finding if a direct conversation exists or not
+    let resultUsers = users.map((u) => ({
+      ...u,
+      conversationId: null as string | null,
+    }));
+
+    if (users.length > 0) {
+      const directConversations = await db
+        .select({
+          conversationId: conversation.id,
+          userId: conversationParticipants.userId,
+        })
+        .from(conversation)
+        .innerJoin(
+          conversationParticipants,
+          eq(conversationParticipants.conversationId, conversation.id)
+        )
+        .where(
+          and(
+            eq(conversation.type, "direct"),
+            inArray(conversationParticipants.userId, [
+              currentUser.id,
+              ...users.map((u) => u.id),
+            ])
+          )
+        );
+
+      const conversationMap = new Map<string, string>();
+
+      for (const row of directConversations) {
+        if (row.userId !== currentUser.id) {
+          conversationMap.set(row.userId, row.conversationId);
+        }
+      }
+
+      resultUsers = users.map((u) => ({
+        ...u,
+        conversationId: conversationMap.get(u.id) ?? null,
+      }));
+    }
+
+    const matchingGroup = await db
+      .select({
+        id: conversation.id,
+        name: conversation.name,
+        avatar: conversation.avatar,
+      })
+      .from(conversation)
+      .innerJoin(
+        conversationParticipants,
+        eq(conversationParticipants.conversationId, conversation.id)
+      )
+      .where(
+        and(
+          eq(conversation.type, "group"),
+          eq(conversationParticipants.userId, currentUser.id),
+          ilike(conversation.name, `${query}%`)
+        )
+      )
+      .limit(10);
+
+    logger.info({}, "Successfully fetched the results");
     return res.status(200).json({
       success: true,
-      message: "Successfully fetched user list",
-      data: userList,
+      data: {
+        users: resultUsers,
+        groups: matchingGroup,
+      },
     });
   } catch (error) {
     logger.error({ err: error }, "Unable to search username");
