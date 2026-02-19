@@ -10,7 +10,7 @@ import {
 import { searchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
 
-export const searchUser: RequestHandler<
+export const searchConversation: RequestHandler<
   unknown,
   unknown,
   unknown,
