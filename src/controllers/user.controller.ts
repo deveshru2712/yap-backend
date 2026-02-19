@@ -53,8 +53,8 @@ export const searchUser: RequestHandler<
     if (users.length > 0) {
       const directConversations = await db
         .select({
-          conversationId: conversation.id,
           userId: conversationParticipants.userId,
+          conversationId: conversation.id,
         })
         .from(conversation)
         .innerJoin(
@@ -81,15 +81,17 @@ export const searchUser: RequestHandler<
 
       resultUsers = users.map((u) => ({
         ...u,
+        type: "direct",
         conversationId: conversationMap.get(u.id) ?? null,
       }));
     }
 
     const matchingGroup = await db
       .select({
-        id: conversation.id,
         name: conversation.name,
         avatar: conversation.avatar,
+        type: conversation.type,
+        conversationId: conversation.id,
       })
       .from(conversation)
       .innerJoin(
