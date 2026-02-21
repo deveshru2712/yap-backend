@@ -14,3 +14,11 @@ logger.error({ err }, "Database connection failed");
 // Authentication events
 logger.info({ userId }, "User logged in");
 logger.warn({ userId }, "Failed login attempt");
+
+When consuming messages, use a selector:
+
+const messages = useMessageStore(
+(state) => state.messagesByConversation[conversationId] || []
+);
+
+This prevents the whole component from re-rendering when other conversations update.

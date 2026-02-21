@@ -21,17 +21,13 @@ export const searchConversation: RequestHandler<
     const currentUser = req.user;
 
     if (!currentUser) {
-      logger.warn(
-        { unauthorized: "user not logged in" },
-        "cannot search for user"
-      );
+      logger.warn("Unauthorized search attempt");
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
       });
     }
 
-    // get the user with matching username
     const users = await db
       .select({
         id: user.id,
@@ -44,7 +40,6 @@ export const searchConversation: RequestHandler<
       )
       .limit(10);
 
-    // finding if a direct conversation exists or not
     let resultUsers = users.map((u) => ({
       ...u,
       conversationId: null as string | null,
@@ -107,7 +102,11 @@ export const searchConversation: RequestHandler<
       )
       .limit(10);
 
-    logger.info({}, "Successfully fetched the results");
+    logger.info(
+      { userId: currentUser.id, query },
+      "Search results fetched successfully"
+    );
+
     return res.status(200).json({
       success: true,
       data: {
@@ -116,7 +115,7 @@ export const searchConversation: RequestHandler<
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Unable to search username");
+    logger.error(error, "Unable to search username");
     next(error);
   }
 };

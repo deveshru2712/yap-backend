@@ -18,8 +18,6 @@ export const signUp: RequestHandler<
   const { username, email, password } = req.body;
 
   try {
-    // Check if user already exists
-
     const existingUser = await db.query.user.findFirst({
       where: eq(schema.user.email, email),
     });
@@ -32,11 +30,9 @@ export const signUp: RequestHandler<
       });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
-    // Create user
     const [newUser] = await db
       .insert(schema.user)
       .values({
@@ -52,7 +48,7 @@ export const signUp: RequestHandler<
       });
 
     if (!newUser) {
-      logger.error({ email }, "Failed to create user in database");
+      logger.error("Failed to create user in database");
       return res.status(500).json({
         success: false,
         message: "Failed to create user",
@@ -61,7 +57,6 @@ export const signUp: RequestHandler<
 
     logger.info({ userId: newUser.id }, "User signed up successfully");
 
-    // Set auth cookie
     authCookie(
       {
         id: newUser.id,
@@ -77,7 +72,7 @@ export const signUp: RequestHandler<
       message: "Account created successfully",
     });
   } catch (error) {
-    logger.error({ err: error, email }, "Signup error");
+    logger.error(error, "Signup error");
     next(error);
   }
 };
@@ -132,7 +127,7 @@ export const signIn: RequestHandler<
       message: "Logged in successfully",
     });
   } catch (error) {
-    logger.error({ err: error, email }, "Login error");
+    logger.error(error, "Login error");
     next(error);
   }
 };
@@ -154,7 +149,7 @@ export const logOut: RequestHandler = (req, res, next) => {
       message: "Logged out successfully",
     });
   } catch (error) {
-    logger.error({ err: error }, "Logout error");
+    logger.error(error, "Logout error");
     next(error);
   }
 };
@@ -173,7 +168,7 @@ export const verify = (req: Request, res: Response, next: NextFunction) => {
       user: req.user,
     });
   } catch (error) {
-    logger.error({ err: error }, "Verify endpoint error");
+    logger.error(error, "Verify endpoint error");
     next(error);
   }
 };
