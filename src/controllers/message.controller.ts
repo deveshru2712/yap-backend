@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, or } from "drizzle-orm";
 import { RequestHandler } from "express";
 
 import db from "../db/drizzle";
@@ -138,31 +138,58 @@ export const fetchMessage: RequestHandler<
       });
     }
 
-    const messages = await db
+    const result = await db
       .select({
-        id: message.id,
-        content: message.content,
+        conversationId: conversation.id,
+        type: conversation.type,
+        messageId: message.id,
         senderId: message.senderId,
+        content: message.content,
         createdAt: message.createdAt,
       })
-      .from(message)
-      .innerJoin(
+      .from(conversation)
+      .leftJoin(message, eq(message.conversationId, conversation.id))
+      .leftJoin(
         conversationParticipants,
-        eq(message.conversationId, conversationParticipants.conversationId)
+        and(
+          eq(conversationParticipants.conversationId, conversation.id),
+          eq(conversationParticipants.userId, currentUser.id)
+        )
       )
       .where(
         and(
-          eq(message.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id)
+          eq(conversation.id, conversationId),
+          or(
+            eq(conversation.type, "direct"),
+            and(
+              eq(conversation.type, "group"),
+              isNotNull(conversationParticipants.userId)
+            )
+          )
         )
       );
 
-    if (!messages.length) {
+    if (!result.length) {
+      logger.warn(
+        { userId: currentUser.id, conversationId },
+        "Access denied or conversation not found"
+      );
+
       return res.status(403).json({
         success: false,
         message: "You are not allowed to access this conversation",
       });
     }
+
+    const messages = result
+      .filter((row) => row.messageId !== null)
+      .map((row) => ({
+        id: row.messageId,
+        senderId: row.senderId,
+        content: row.content,
+        createdAt: row.createdAt,
+        conversationId: row.conversationId,
+      }));
 
     logger.info(
       { userId: currentUser.id, conversationId },
