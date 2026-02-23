@@ -6,112 +6,208 @@ import {
   conversation,
   conversationParticipants,
   message,
+  user,
 } from "../db/schema/schema";
-import { fetchMessageQuery } from "../schemas/message.schema";
+import {
+  fetchMessageQuery,
+  sendDirectMessageBody,
+} from "../schemas/message.schema";
 import { logger } from "../utils/pino";
 
-// export const sendMessage: RequestHandler<
-//   unknown,
-//   unknown,
-//   sendMessageBody,
-//   sendMessageQuery
-// > = async (req, res, next) => {
-//   try {
-//     const { receiverId } = req.query;
-//     const { content } = req.body;
-//     const currentUser = req.user;
+export const sendDirectMessage: RequestHandler<
+  unknown,
+  unknown,
+  sendDirectMessageBody,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const currentUser = req.user;
 
-//     if (!currentUser) {
-//       logger.error({ unauthorized: "user not loggged in" }, "user unauthorized");
-//       return res.status(401).json({
-//         success: false,
-//         message: "Unauthorized user ",
-//       });
-//     }
+    if (!currentUser) {
+      logger.warn("Unauthorized direct message attempt");
+      return res.status(401).json({
+        success: false,
+        message: "User not authorized",
+      });
+    }
 
-//     const existingConversation = await db
-//       .select({ conversationId: conversationParticipants.conversationId })
-//       .from(conversationParticipants)
-//       .innerJoin(
-//         conversation,
-//         eq(conversationParticipants.conversationId, conversation.id)
-//       )
-//       .where(
-//         and(
-//           inArray(conversationParticipants.userId, [
-//             currentUser.id,
-//             receiverId,
-//           ]),
-//           eq(conversation.type, "direct")
-//         )
-//       )
-//       .groupBy(conversationParticipants.conversationId)
-//       .having(eq(count(), 2));
+    const { content, receiverId, conversationId } = req.body;
 
-//     let newMessage;
+    if (!content || content.trim() === "") {
+      logger.warn({ userId: currentUser.id }, "Empty message content rejected");
+      return res.status(400).json({
+        success: false,
+        message: "Message content required",
+      });
+    }
 
-//     if (existingConversation.length > 0) {
-//       newMessage = await db.transaction(async (tx) => {
-//         const [msg] = await tx
-//           .insert(message)
-//           .values({
-//             senderId: currentUser.id,
-//             content,
-//             conversationId: existingConversation[0].conversationId,
-//             type: "text",
-//           })
-//           .returning();
+    if (!conversationId) {
+      const receiver = await db
+        .select({ id: user.id, name: user.username, avatar: user.avatar })
+        .from(user)
+        .where(eq(user.id, receiverId))
+        .limit(1);
 
-//         await tx
-//           .update(conversation)
-//           .set({ updatedAt: new Date() })
-//           .where(eq(conversation.id, existingConversation[0].conversationId));
+      if (receiver.length === 0) {
+        logger.warn(
+          { userId: currentUser.id, receiverId },
+          "Receiver not found"
+        );
+        return res.status(404).json({
+          success: false,
+          message: "Receiver not found",
+        });
+      }
 
-//         return msg;
-//       });
+      if (receiverId === currentUser.id) {
+        logger.warn(
+          { userId: currentUser.id },
+          "User attempted to message themselves"
+        );
+        return res.status(400).json({
+          success: false,
+          message: "Cannot send message to yourself",
+        });
+      }
 
-//       logger.info(
-//         { conversationId: existingConversation[0].conversationId },
-//         "Message sent to existing conversation"
-//       );
-//     } else {
-//       newMessage = await db.transaction(async (tx) => {
-//         const [newConversation] = await tx
-//           .insert(conversation)
-//           .values({ type: "direct" })
-//           .returning();
+      let createdMessage;
 
-//         await tx.insert(conversationParticipants).values([
-//           { conversationId: newConversation.id, userId: currentUser.id },
-//           { conversationId: newConversation.id, userId: receiverId },
-//         ]);
+      await db.transaction(async (tx) => {
+        const existingConversation = await tx
+          .select({ conversationId: conversation.id })
+          .from(conversation)
+          .innerJoin(
+            conversationParticipants,
+            eq(conversationParticipants.conversationId, conversation.id)
+          )
+          .where(
+            and(
+              eq(conversation.type, "direct"),
+              inArray(conversationParticipants.userId, [
+                currentUser.id,
+                receiverId,
+              ])
+            )
+          )
+          .groupBy(conversation.id)
+          .having(eq(count(), 2));
 
-//         const [msg] = await tx
-//           .insert(message)
-//           .values({
-//             conversationId: newConversation.id,
-//             senderId: currentUser.id,
-//             content,
-//             type: "text",
-//           })
-//           .returning();
+        let finalConversationId: string;
 
-//         return msg;
-//       });
+        if (existingConversation.length > 0) {
+          finalConversationId = existingConversation[0].conversationId;
+        } else {
+          const [newConversation] = await tx
+            .insert(conversation)
+            .values({
+              avatar: receiver[0].avatar,
+              name: receiver[0].name,
+              type: "direct",
+            })
+            .returning();
 
-//       logger.info({}, "New conversation created and message sent");
-//     }
+          finalConversationId = newConversation.id;
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Message sent successfully",
-//       data: newMessage,
-//     });
-//   } catch (error) {
-//     logger.error({ err: error }, "Unable to send message");
-//     next(error);
-//   }
-// };
+          await tx.insert(conversationParticipants).values([
+            {
+              conversationId: finalConversationId,
+              userId: receiverId,
+            },
+            {
+              conversationId: finalConversationId,
+              userId: currentUser.id,
+            },
+          ]);
+
+          logger.info(
+            {
+              userId: currentUser.id,
+              receiverId,
+              conversationId: finalConversationId,
+            },
+            "Direct conversation created"
+          );
+        }
+
+        const [newMessage] = await tx
+          .insert(message)
+          .values({
+            conversationId: finalConversationId,
+            senderId: currentUser.id,
+            content,
+          })
+          .returning();
+
+        createdMessage = newMessage;
+
+        logger.info(
+          {
+            userId: currentUser.id,
+            conversationId: finalConversationId,
+            messageId: newMessage.id,
+          },
+          "Direct message sent"
+        );
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: createdMessage,
+      });
+    }
+
+    const participant = await db
+      .select({ id: conversationParticipants.id })
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, currentUser.id)
+        )
+      )
+      .limit(1);
+
+    if (participant.length === 0) {
+      logger.warn(
+        { userId: currentUser.id, conversationId },
+        "Unauthorized conversation access attempt"
+      );
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const [newMessage] = await db
+      .insert(message)
+      .values({
+        conversationId,
+        content,
+        senderId: currentUser.id,
+      })
+      .returning();
+
+    logger.info(
+      {
+        userId: currentUser.id,
+        conversationId,
+        messageId: newMessage.id,
+      },
+      "Direct message sent"
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: newMessage,
+    });
+  } catch (error) {
+    logger.error(
+      { userId: req.user?.id, err: error },
+      "Failed to send direct message"
+    );
+    next(error);
+  }
+};
 
 export const fetchMessage: RequestHandler<
   unknown,
@@ -124,7 +220,7 @@ export const fetchMessage: RequestHandler<
     const currentUser = req.user;
 
     if (!currentUser) {
-      logger.warn("Unauthorized access attempt");
+      logger.warn("Unauthorized fetch message attempt");
       return res.status(401).json({
         success: false,
         message: "User not authorized",
@@ -132,6 +228,10 @@ export const fetchMessage: RequestHandler<
     }
 
     if (!conversationId) {
+      logger.warn(
+        { userId: currentUser.id },
+        "Conversation ID missing in fetch request"
+      );
       return res.status(400).json({
         success: false,
         message: "Conversation ID is required",
@@ -174,7 +274,6 @@ export const fetchMessage: RequestHandler<
         { userId: currentUser.id, conversationId },
         "Access denied or conversation not found"
       );
-
       return res.status(403).json({
         success: false,
         message: "You are not allowed to access this conversation",
@@ -192,7 +291,11 @@ export const fetchMessage: RequestHandler<
       }));
 
     logger.info(
-      { userId: currentUser.id, conversationId },
+      {
+        userId: currentUser.id,
+        conversationId,
+        messageCount: messages.length,
+      },
       "Messages fetched successfully"
     );
 
@@ -201,7 +304,10 @@ export const fetchMessage: RequestHandler<
       data: messages,
     });
   } catch (error) {
-    logger.error(error, "Unable to fetch message");
+    logger.error(
+      { userId: req.user?.id, err: error },
+      "Failed to fetch messages"
+    );
     next(error);
   }
 };
