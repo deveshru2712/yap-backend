@@ -224,6 +224,7 @@ export const fetchMessage: RequestHandler<
       return res.status(401).json({
         success: false,
         message: "User not authorized",
+        result: [],
       });
     }
 
@@ -235,6 +236,7 @@ export const fetchMessage: RequestHandler<
       return res.status(400).json({
         success: false,
         message: "Conversation ID is required",
+        result: [],
       });
     }
 
@@ -277,6 +279,7 @@ export const fetchMessage: RequestHandler<
       return res.status(403).json({
         success: false,
         message: "You are not allowed to access this conversation",
+        result: [],
       });
     }
 
@@ -301,7 +304,7 @@ export const fetchMessage: RequestHandler<
 
     return res.status(200).json({
       success: true,
-      data: messages,
+      result: messages,
     });
   } catch (error) {
     logger.error(

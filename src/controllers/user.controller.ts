@@ -109,7 +109,7 @@ export const searchConversation: RequestHandler<
 
     return res.status(200).json({
       success: true,
-      data: {
+      result: {
         users: resultUsers,
         groups: matchingGroup,
       },
