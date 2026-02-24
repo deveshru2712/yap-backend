@@ -22,22 +22,23 @@ export const sendDirectMessage: RequestHandler<
 > = async (req, res, next) => {
   try {
     const currentUser = req.user;
+    const { content, receiverId, conversationId, clientMessageId } = req.body;
 
     if (!currentUser) {
       logger.warn("Unauthorized direct message attempt");
       return res.status(401).json({
         success: false,
         message: "User not authorized",
+        clientMessageId,
       });
     }
-
-    const { content, receiverId, conversationId } = req.body;
 
     if (!content || content.trim() === "") {
       logger.warn({ userId: currentUser.id }, "Empty message content rejected");
       return res.status(400).json({
         success: false,
         message: "Message content required",
+        clientMessageId,
       });
     }
 
@@ -56,6 +57,7 @@ export const sendDirectMessage: RequestHandler<
         return res.status(404).json({
           success: false,
           message: "Receiver not found",
+          clientMessageId,
         });
       }
 
@@ -67,6 +69,7 @@ export const sendDirectMessage: RequestHandler<
         return res.status(400).json({
           success: false,
           message: "Cannot send message to yourself",
+          clientMessageId,
         });
       }
 
@@ -152,7 +155,8 @@ export const sendDirectMessage: RequestHandler<
 
       return res.status(201).json({
         success: true,
-        message: createdMessage,
+        result: createdMessage,
+        clientMessageId,
       });
     }
 
@@ -175,6 +179,7 @@ export const sendDirectMessage: RequestHandler<
       return res.status(403).json({
         success: false,
         message: "Unauthorized",
+        clientMessageId,
       });
     }
 
@@ -198,7 +203,8 @@ export const sendDirectMessage: RequestHandler<
 
     return res.status(201).json({
       success: true,
-      message: newMessage,
+      result: newMessage,
+      clientMessageId,
     });
   } catch (error) {
     logger.error(
