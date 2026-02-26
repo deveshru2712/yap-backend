@@ -8,9 +8,9 @@ interface AuthTokenPayload {
 interface DirectMessagePayload {
   id: string;
   senderId: string;
-  conversationId: string;
-  content: string;
-  createdAt: string;
-  type: "direct";
   receiverId: string;
+  content: string;
+  createdAt: Date;
+  type: "text" | "image";
+  conversationId: string;
 }

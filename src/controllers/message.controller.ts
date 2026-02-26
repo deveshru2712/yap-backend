@@ -203,7 +203,7 @@ export const sendDirectMessage: RequestHandler<
     );
 
     // emit direct message
-    emitDirectMessage(newMessage);
+    emitDirectMessage({ ...newMessage, receiverId });
 
     return res.status(201).json({
       success: true,
