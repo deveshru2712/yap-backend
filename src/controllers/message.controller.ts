@@ -74,7 +74,7 @@ export const sendDirectMessage: RequestHandler<
         });
       }
 
-      let createdMessage;
+      let createdMessage!: typeof message.$inferSelect;
 
       await db.transaction(async (tx) => {
         const existingConversation = await tx
@@ -154,6 +154,9 @@ export const sendDirectMessage: RequestHandler<
         );
       });
 
+      // emit direct message in case the conversation does not exits
+      emitDirectMessage({ ...createdMessage, receiverId });
+
       return res.status(201).json({
         success: true,
         result: createdMessage,
@@ -202,7 +205,7 @@ export const sendDirectMessage: RequestHandler<
       "Direct message sent"
     );
 
-    // emit direct message
+    // emit direct message in case conversation exists
     emitDirectMessage({ ...newMessage, receiverId });
 
     return res.status(201).json({
