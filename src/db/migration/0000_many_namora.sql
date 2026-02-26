@@ -18,7 +18,7 @@ CREATE TABLE "messages" (
 	"conversation_id" uuid NOT NULL,
 	"sender_id" uuid NOT NULL,
 	"type" text DEFAULT 'text' NOT NULL,
-	"content" text,
+	"content" text NOT NULL,
 	"created_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
@@ -27,7 +27,7 @@ CREATE TABLE "users" (
 	"username" text NOT NULL,
 	"email" text NOT NULL,
 	"password" text NOT NULL,
-	"profile_pic" text,
+	"avatar" text,
 	"token_version" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL,

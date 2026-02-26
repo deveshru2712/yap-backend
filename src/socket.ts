@@ -69,29 +69,24 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
+  const user = socket.data.user;
+
+  // join there respective room to get
+  socket.join(user.id);
+
   logger.info(
     {
       socketId: socket.id,
-      userId: socket.data.user.id,
+      userId: user.id,
     },
     "User connected via socket"
   );
-
-  socket.on("msg", (data) => {
-    logger.info(
-      {
-        senderId: data.senderId,
-        content: data.content,
-      },
-      "Message send"
-    );
-  });
 
   socket.on("disconnect", (reason) => {
     logger.info(
       {
         socketId: socket.id,
-        userId: socket.data.user.id,
+        userId: user.id,
         reason,
       },
       "User disconnected from socket"

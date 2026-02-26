@@ -1,17 +1,18 @@
 import { and, count, eq, inArray, isNotNull, or } from "drizzle-orm";
 import { RequestHandler } from "express";
 
-import db from "../db/drizzle";
+import db from "../db/db";
 import {
   conversation,
   conversationParticipants,
   message,
   user,
-} from "../db/schema/schema";
+} from "../db/schema";
 import {
   fetchMessageQuery,
   sendDirectMessageBody,
 } from "../schemas/message.schema";
+import { emitDirectMessage } from "../socket/emitDirectMessage";
 import { logger } from "../utils/pino";
 
 export const sendDirectMessage: RequestHandler<
@@ -200,6 +201,9 @@ export const sendDirectMessage: RequestHandler<
       },
       "Direct message sent"
     );
+
+    // emit direct message
+    emitDirectMessage(newMessage);
 
     return res.status(201).json({
       success: true,

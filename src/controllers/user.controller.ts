@@ -1,12 +1,8 @@
 import { and, eq, ilike, inArray, not } from "drizzle-orm";
 import { RequestHandler } from "express";
 
-import db from "../db/drizzle";
-import {
-  conversation,
-  conversationParticipants,
-  user,
-} from "../db/schema/schema";
+import db from "../db/db";
+import { conversation, conversationParticipants, user } from "../db/schema";
 import { searchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
 

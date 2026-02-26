@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 
 import { env } from "../config/env";
-import db from "../db/drizzle";
-import { schema } from "../db/schema/schema";
+import db from "../db/db";
+import { schema } from "../db/schema";
 import { signInBody, signUpBody } from "../schemas/auth.schema";
 import { authCookie } from "../utils/authCookie";
 import { logger } from "../utils/pino";

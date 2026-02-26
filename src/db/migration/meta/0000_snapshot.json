@@ -1,5 +1,5 @@
 {
-  "id": "b55f4e33-8428-4644-8ea6-eb6a661365fa",
+  "id": "7ef44511-9541-4a86-896d-99ec5895f015",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -135,8 +135,12 @@
           "name": "conversation_participants_conversation_id_conversations_id_fk",
           "tableFrom": "conversation_participants",
           "tableTo": "conversations",
-          "columnsFrom": ["conversation_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "conversation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -144,8 +148,12 @@
           "name": "conversation_participants_user_id_users_id_fk",
           "tableFrom": "conversation_participants",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -189,7 +197,7 @@
           "name": "content",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -235,8 +243,12 @@
           "name": "messages_conversation_id_conversations_id_fk",
           "tableFrom": "messages",
           "tableTo": "conversations",
-          "columnsFrom": ["conversation_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "conversation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -244,8 +256,12 @@
           "name": "messages_sender_id_users_id_fk",
           "tableFrom": "messages",
           "tableTo": "users",
-          "columnsFrom": ["sender_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sender_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -284,8 +300,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "profile_pic": {
-          "name": "profile_pic",
+        "avatar": {
+          "name": "avatar",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -333,7 +349,9 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},

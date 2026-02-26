@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { RequestHandler } from "express";
 
-import db from "../db/drizzle";
-import { schema } from "../db/schema/schema";
+import db from "../db/db";
+import { schema } from "../db/schema";
 import { logger } from "../utils/pino";
 
 export const recentConversation: RequestHandler = async (req, res, next) => {

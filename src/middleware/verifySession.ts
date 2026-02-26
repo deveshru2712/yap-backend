@@ -3,8 +3,8 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 import { env } from "../config/env";
-import db from "../db/drizzle";
-import { schema } from "../db/schema/schema";
+import db from "../db/db";
+import { schema } from "../db/schema";
 import { logger } from "../utils/pino";
 
 export const verifySession = async (

@@ -93,7 +93,7 @@ export const message = pgTable(
     type: text("type", { enum: ["text", "image"] })
       .notNull()
       .default("text"),
-    content: text("content"), // message text OR image URL
+    content: text("content").notNull(), // message text OR image URL
     createdAt: timestamp("created_at", { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
