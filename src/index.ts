@@ -6,6 +6,7 @@ import z from "zod";
 
 import { env } from "./config/env";
 import authRouter from "./routes/auth.routes";
+import conversationRouter from "./routes/conversation.routes";
 import messageRouter from "./routes/message.routes";
 import userRouter from "./routes/user.routes";
 import { app, server } from "./socket";
@@ -52,6 +53,7 @@ app.get("/health", (req, res) => {
 // Your routes will go here
 app.use("/v1/api/auth", authRouter);
 app.use("/v1/api/message", messageRouter);
+app.use("/v1/api/conversation", conversationRouter);
 app.use("/v1/api/user", userRouter);
 
 // 404 handler
