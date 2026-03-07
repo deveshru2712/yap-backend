@@ -1,4 +1,4 @@
-import { and, desc, eq, max, ne } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { RequestHandler } from "express";
 
@@ -27,73 +27,88 @@ export const fetchRecentConversation: RequestHandler = async (
       });
     }
 
-    logger.info({ userId: currentUser.id }, "Fetching recent conversations");
-
-    const latestPerConversation = db
-      .select({
-        conversationId: message.conversationId,
-        maxCreatedAt: max(message.createdAt).as("maxCreatedAt"),
-      })
-      .from(message)
-      .groupBy(message.conversationId)
-      .as("latest");
-
     const otherParticipant = alias(
       conversationParticipants,
-      "otherParticipant"
+      "other_participant"
     );
 
-    const result = await db
-      .select({
-        userId: user.id,
+    // DIRECT CONVERSATIONS
+    const direct = await db
+      .selectDistinctOn([conversation.id], {
         conversationId: conversation.id,
-        name: conversation.name,
-        avatar: conversation.avatar,
-        type: conversation.type,
+        messageId: message.id,
+        content: message.content,
+        createdAt: message.createdAt,
+
+        receiverId: user.id,
+        receiverName: user.username,
+        receiverAvatar: user.avatar,
+      })
+      .from(conversationParticipants)
+
+      .innerJoin(
+        conversation,
+        eq(conversationParticipants.conversationId, conversation.id)
+      )
+
+      .innerJoin(message, eq(message.conversationId, conversation.id))
+
+      .innerJoin(
+        otherParticipant,
+        eq(otherParticipant.conversationId, conversation.id)
+      )
+
+      .innerJoin(user, eq(user.id, otherParticipant.userId))
+
+      .where(
+        and(
+          eq(conversationParticipants.userId, currentUser.id),
+          eq(conversation.type, "direct"),
+          ne(otherParticipant.userId, currentUser.id)
+        )
+      )
+
+      .orderBy(conversation.id, desc(message.createdAt))
+
+      .limit(5);
+
+    // GROUP CONVERSATIONS
+    const group = await db
+      .selectDistinctOn([conversation.id], {
+        conversationId: conversation.id,
+        conversationName: conversation.name,
+        conversationAvatar: conversation.avatar,
+
+        messageId: message.id,
         content: message.content,
         createdAt: message.createdAt,
       })
       .from(conversationParticipants)
+
       .innerJoin(
-        latestPerConversation,
-        eq(
-          conversationParticipants.conversationId,
-          latestPerConversation.conversationId
-        )
+        conversation,
+        eq(conversationParticipants.conversationId, conversation.id)
       )
-      .innerJoin(
-        message,
+
+      .innerJoin(message, eq(message.conversationId, conversation.id))
+
+      .where(
         and(
-          eq(message.conversationId, latestPerConversation.conversationId),
-          eq(message.createdAt, latestPerConversation.maxCreatedAt)
+          eq(conversationParticipants.userId, currentUser.id),
+          eq(conversation.type, "group")
         )
       )
-      .innerJoin(conversation, eq(conversation.id, message.conversationId))
-      .leftJoin(
-        otherParticipant,
-        and(
-          eq(otherParticipant.conversationId, conversation.id),
-          ne(otherParticipant.userId, currentUser.id)
-        )
-      )
-      .leftJoin(user, eq(user.id, otherParticipant.userId))
-      .where(eq(conversationParticipants.userId, currentUser.id))
-      .orderBy(desc(message.createdAt))
-      .limit(10);
 
-    if (!result.length) {
-      logger.info({ userId: currentUser.id }, "No recent conversations found");
-      return res.status(200).json({ success: true, result: [] });
-    }
+      .orderBy(conversation.id, desc(message.createdAt))
 
-    logger.info(
-      { userId: currentUser.id, count: result.length },
-      "Recent conversations fetched successfully"
-    );
+      .limit(5);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      result,
+      result: {
+        direct,
+        group,
+      },
     });
   } catch (error) {
     logger.error(
