@@ -246,6 +246,7 @@ export const fetchMessage: RequestHandler<
         { userId: currentUser.id },
         "Conversation ID missing in fetch request"
       );
+
       return res.status(400).json({
         success: false,
         message: "Conversation ID is required",
@@ -263,32 +264,28 @@ export const fetchMessage: RequestHandler<
         createdAt: message.createdAt,
       })
       .from(conversation)
-      .leftJoin(message, eq(message.conversationId, conversation.id))
-      .leftJoin(
+
+      // user must be participant
+      .innerJoin(
         conversationParticipants,
         and(
           eq(conversationParticipants.conversationId, conversation.id),
           eq(conversationParticipants.userId, currentUser.id)
         )
       )
-      .where(
-        and(
-          eq(conversation.id, conversationId),
-          or(
-            eq(conversation.type, "direct"),
-            and(
-              eq(conversation.type, "group"),
-              isNotNull(conversationParticipants.userId)
-            )
-          )
-        )
-      );
+
+      // messages may or may not exist
+      .leftJoin(message, eq(message.conversationId, conversation.id))
+
+      .where(eq(conversation.id, conversationId))
+      .orderBy(message.createdAt);
 
     if (!result.length) {
       logger.warn(
         { userId: currentUser.id, conversationId },
         "Access denied or conversation not found"
       );
+
       return res.status(403).json({
         success: false,
         message: "You are not allowed to access this conversation",

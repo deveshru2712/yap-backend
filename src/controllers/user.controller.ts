@@ -1,4 +1,5 @@
 import { and, eq, ilike, inArray, not } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { RequestHandler } from "express";
 
 import db from "../db/db";
@@ -24,6 +25,7 @@ export const searchConversation: RequestHandler<
       });
     }
 
+    // Search users
     const users = await db
       .select({
         id: user.id,
@@ -38,36 +40,43 @@ export const searchConversation: RequestHandler<
 
     let resultUsers = users.map((u) => ({
       ...u,
+      type: "direct",
       conversationId: null as string | null,
     }));
 
     if (users.length > 0) {
+      const cpOther = alias(conversationParticipants, "cp_other");
+      const cpCurrent = alias(conversationParticipants, "cp_current");
+
       const directConversations = await db
         .select({
-          userId: conversationParticipants.userId,
+          otherUserId: cpOther.userId,
           conversationId: conversation.id,
         })
         .from(conversation)
         .innerJoin(
-          conversationParticipants,
-          eq(conversationParticipants.conversationId, conversation.id)
-        )
-        .where(
+          cpCurrent,
           and(
-            eq(conversation.type, "direct"),
-            inArray(conversationParticipants.userId, [
-              currentUser.id,
-              ...users.map((u) => u.id),
-            ])
+            eq(cpCurrent.conversationId, conversation.id),
+            eq(cpCurrent.userId, currentUser.id)
           )
-        );
+        )
+        .innerJoin(
+          cpOther,
+          and(
+            eq(cpOther.conversationId, conversation.id),
+            inArray(
+              cpOther.userId,
+              users.map((u) => u.id)
+            )
+          )
+        )
+        .where(eq(conversation.type, "direct"));
 
       const conversationMap = new Map<string, string>();
 
       for (const row of directConversations) {
-        if (row.userId !== currentUser.id) {
-          conversationMap.set(row.userId, row.conversationId);
-        }
+        conversationMap.set(row.otherUserId, row.conversationId);
       }
 
       resultUsers = users.map((u) => ({
@@ -77,6 +86,7 @@ export const searchConversation: RequestHandler<
       }));
     }
 
+    // Search groups
     const matchingGroup = await db
       .select({
         name: conversation.name,

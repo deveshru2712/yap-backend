@@ -27,12 +27,15 @@ export const verifySession = async (
       columns: { tokenversion: true },
     });
 
-    if (!user) {
+    if (!user || user.tokenversion !== payload.tokenVersion) {
       req.user = null;
-    }
-
-    if (user?.tokenversion !== payload.tokenVersion) {
-      req.user = null;
+      res.cookie("yap_token", "", {
+        expires: new Date(0),
+        httpOnly: true,
+        sameSite: "strict",
+        secure: env.NODE_ENV === "production",
+      });
+      return next();
     }
 
     req.user = {
@@ -41,6 +44,7 @@ export const verifySession = async (
       username: payload.username,
       tokenVerstion: payload.tokenVersion,
     };
+
     next();
   } catch (error) {
     logger.debug({ err: error }, "JWT verification failed");
