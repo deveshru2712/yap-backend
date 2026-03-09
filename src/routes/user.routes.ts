@@ -7,11 +7,4 @@ import { searchQuerySchema } from "../schemas/user.schema";
 
 const router = express.Router();
 
-router.get(
-  "/",
-  zodValidator(searchQuerySchema, "query"),
-  verifySession,
-  userController.searchConversation
-);
-
 export default router;
