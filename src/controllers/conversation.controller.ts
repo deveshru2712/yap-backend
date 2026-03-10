@@ -141,7 +141,7 @@ export const searchConversation: RequestHandler<
 
     const users = await db
       .select({
-        id: user.id,
+        userId: user.id,
         name: user.username,
         avatar: user.avatar,
       })
@@ -188,7 +188,7 @@ export const searchConversation: RequestHandler<
           and(
             inArray(
               cpOther.userId,
-              users.map((u) => u.id)
+              users.map((u) => u.userId)
             ),
             not(eq(cpOther.userId, currentUser.id))
           )
@@ -205,7 +205,7 @@ export const searchConversation: RequestHandler<
       resultUsers = users.map((u) => ({
         ...u,
         type: "direct",
-        conversationId: conversationMap.get(u.id) ?? null,
+        conversationId: conversationMap.get(u.userId) ?? null,
       }));
     }
 

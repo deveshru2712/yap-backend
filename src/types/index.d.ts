@@ -11,6 +11,8 @@ interface DirectMessagePayload {
   receiverId: string;
   content: string;
   createdAt: Date;
-  type: "text" | "image";
   conversationId: string;
+  name: string;
+  avatar: string | null;
+  type: "direct";
 }

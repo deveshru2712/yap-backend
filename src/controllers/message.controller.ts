@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNotNull, or } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { RequestHandler } from "express";
 
 import db from "../db/db";
@@ -43,38 +43,48 @@ export const sendDirectMessage: RequestHandler<
       });
     }
 
+    // Fetch receiver info once
+    const [receiver] = await db
+      .select({
+        id: user.id,
+        name: user.username,
+        avatar: user.avatar,
+      })
+      .from(user)
+      .where(eq(user.id, receiverId))
+      .limit(1);
+
+    if (!receiver) {
+      logger.warn({ userId: currentUser.id, receiverId }, "Receiver not found");
+      return res.status(404).json({
+        success: false,
+        message: "Receiver not found",
+        clientMessageId,
+      });
+    }
+
+    if (receiverId === currentUser.id) {
+      logger.warn(
+        { userId: currentUser.id },
+        "User attempted to message themselves"
+      );
+      return res.status(400).json({
+        success: false,
+        message: "Cannot send message to yourself",
+        clientMessageId,
+      });
+    }
+
     if (!conversationId) {
-      const receiver = await db
-        .select({ id: user.id, name: user.username, avatar: user.avatar })
-        .from(user)
-        .where(eq(user.id, receiverId))
-        .limit(1);
+      let createdMessage!: {
+        id: string;
+        conversationId: string;
+        senderId: string;
+        content: string;
+        createdAt: Date;
+      };
 
-      if (receiver.length === 0) {
-        logger.warn(
-          { userId: currentUser.id, receiverId },
-          "Receiver not found"
-        );
-        return res.status(404).json({
-          success: false,
-          message: "Receiver not found",
-          clientMessageId,
-        });
-      }
-
-      if (receiverId === currentUser.id) {
-        logger.warn(
-          { userId: currentUser.id },
-          "User attempted to message themselves"
-        );
-        return res.status(400).json({
-          success: false,
-          message: "Cannot send message to yourself",
-          clientMessageId,
-        });
-      }
-
-      let createdMessage!: typeof message.$inferSelect;
+      let finalConversationId!: string;
 
       await db.transaction(async (tx) => {
         const existingConversation = await tx
@@ -96,19 +106,17 @@ export const sendDirectMessage: RequestHandler<
           .groupBy(conversation.id)
           .having(eq(count(), 2));
 
-        let finalConversationId: string;
-
         if (existingConversation.length > 0) {
           finalConversationId = existingConversation[0].conversationId;
         } else {
           const [newConversation] = await tx
             .insert(conversation)
             .values({
-              avatar: receiver[0].avatar,
-              name: receiver[0].name,
+              avatar: receiver.avatar,
+              name: receiver.name,
               type: "direct",
             })
-            .returning();
+            .returning({ id: conversation.id });
 
           finalConversationId = newConversation.id;
 
@@ -140,7 +148,13 @@ export const sendDirectMessage: RequestHandler<
             senderId: currentUser.id,
             content,
           })
-          .returning();
+          .returning({
+            id: message.id,
+            conversationId: message.conversationId,
+            senderId: message.senderId,
+            content: message.content,
+            createdAt: message.createdAt,
+          });
 
         createdMessage = newMessage;
 
@@ -154,8 +168,13 @@ export const sendDirectMessage: RequestHandler<
         );
       });
 
-      // emit direct message in case the conversation does not exits
-      emitDirectMessage({ ...createdMessage, receiverId });
+      emitDirectMessage({
+        ...createdMessage,
+        receiverId,
+        name: receiver.name,
+        avatar: receiver.avatar,
+        type: "direct",
+      });
 
       return res.status(201).json({
         success: true,
@@ -194,7 +213,13 @@ export const sendDirectMessage: RequestHandler<
         content,
         senderId: currentUser.id,
       })
-      .returning();
+      .returning({
+        id: message.id,
+        conversationId: message.conversationId,
+        senderId: message.senderId,
+        content: message.content,
+        createdAt: message.createdAt,
+      });
 
     logger.info(
       {
@@ -205,8 +230,13 @@ export const sendDirectMessage: RequestHandler<
       "Direct message sent"
     );
 
-    // emit direct message in case conversation exists
-    emitDirectMessage({ ...newMessage, receiverId });
+    emitDirectMessage({
+      ...newMessage,
+      receiverId,
+      name: receiver.name,
+      avatar: receiver.avatar,
+      type: "direct",
+    });
 
     return res.status(201).json({
       success: true,
