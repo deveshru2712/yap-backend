@@ -6,6 +6,7 @@ import { verifySession } from "../middleware/verifySession";
 import {
   fetchMessageQuerySchema,
   sendDirectMessageBodySchema,
+  sendGroupMessageBodySchema,
 } from "../schemas/message.schema";
 
 const router = express.Router();
@@ -22,6 +23,13 @@ router.post(
   verifySession,
   zodValidator(sendDirectMessageBodySchema),
   messageController.sendDirectMessage
+);
+
+router.post(
+  "/group",
+  verifySession,
+  zodValidator(sendGroupMessageBodySchema),
+  messageController.sendGroupMessage
 );
 
 export default router;

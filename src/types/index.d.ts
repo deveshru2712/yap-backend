@@ -12,7 +12,20 @@ interface DirectMessagePayload {
   content: string;
   createdAt: Date;
   conversationId: string;
+  senderUserName: string;
   name: string;
   avatar: string | null;
   type: "direct";
+}
+
+interface GroupMessagePayload {
+  id: string;
+  senderId: string;
+  content: string;
+  createdAt: Date;
+  conversationId: string;
+  senderUserName: string;
+  name: string;
+  avatar: string | null;
+  type: "group";
 }

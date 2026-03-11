@@ -11,8 +11,10 @@ import {
 import {
   fetchMessageQuery,
   sendDirectMessageBody,
+  sendGroupMessageBody,
 } from "../schemas/message.schema";
 import { emitDirectMessage } from "../socket/emitDirectMessage";
+import { emitGroupMessage } from "../socket/emitGroupMessage";
 import { logger } from "../utils/pino";
 
 export const sendDirectMessage: RequestHandler<
@@ -171,6 +173,7 @@ export const sendDirectMessage: RequestHandler<
       emitDirectMessage({
         ...createdMessage,
         receiverId,
+        senderUserName: currentUser.username,
         name: receiver.name,
         avatar: receiver.avatar,
         type: "direct",
@@ -178,8 +181,7 @@ export const sendDirectMessage: RequestHandler<
 
       return res.status(201).json({
         success: true,
-        result: createdMessage,
-        clientMessageId,
+        result: { ...createdMessage, clientMessageId },
       });
     }
 
@@ -233,6 +235,7 @@ export const sendDirectMessage: RequestHandler<
     emitDirectMessage({
       ...newMessage,
       receiverId,
+      senderUserName: currentUser.username,
       name: receiver.name,
       avatar: receiver.avatar,
       type: "direct",
@@ -240,8 +243,7 @@ export const sendDirectMessage: RequestHandler<
 
     return res.status(201).json({
       success: true,
-      result: newMessage,
-      clientMessageId,
+      result: { ...newMessage, clientMessageId },
     });
   } catch (error) {
     logger.error(
@@ -290,12 +292,13 @@ export const fetchMessage: RequestHandler<
         type: conversation.type,
         messageId: message.id,
         senderId: message.senderId,
+        username: user.username,
         content: message.content,
         createdAt: message.createdAt,
       })
       .from(conversation)
 
-      // user must be participant
+      // ensure current user is a participant
       .innerJoin(
         conversationParticipants,
         and(
@@ -306,6 +309,9 @@ export const fetchMessage: RequestHandler<
 
       // messages may or may not exist
       .leftJoin(message, eq(message.conversationId, conversation.id))
+
+      // join users to get sender username
+      .leftJoin(user, eq(user.id, message.senderId))
 
       .where(eq(conversation.id, conversationId))
       .orderBy(message.createdAt);
@@ -328,6 +334,7 @@ export const fetchMessage: RequestHandler<
       .map((row) => ({
         id: row.messageId,
         senderId: row.senderId,
+        senderUsername: row.username,
         content: row.content,
         createdAt: row.createdAt,
         conversationId: row.conversationId,
@@ -350,6 +357,114 @@ export const fetchMessage: RequestHandler<
     logger.error(
       { userId: req.user?.id, err: error },
       "Failed to fetch messages"
+    );
+    next(error);
+  }
+};
+
+export const sendGroupMessage: RequestHandler<
+  unknown,
+  unknown,
+  sendGroupMessageBody,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const currentUser = req.user;
+
+    if (!currentUser?.id) {
+      logger.warn("User unauthorized");
+      return res.status(401).json({
+        success: false,
+        message: "User not authorized",
+      });
+    }
+
+    const { conversationId, content, clientMessageId } = req.body;
+
+    if (!conversationId || !content || !clientMessageId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid data",
+      });
+    }
+
+    // Check membership
+    const existingConversation = await db
+      .select({
+        name: conversation.name,
+        type: conversation.type,
+      })
+      .from(conversation)
+      .innerJoin(
+        conversationParticipants,
+        eq(conversation.id, conversationParticipants.conversationId)
+      )
+      .where(
+        and(
+          eq(conversation.id, conversationId),
+          eq(conversationParticipants.userId, currentUser.id)
+        )
+      )
+      .limit(1);
+
+    if (!existingConversation.length) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not a member of this conversation",
+      });
+    }
+
+    const conv = existingConversation[0];
+
+    // Ensure this endpoint only handles groups
+    if (conv.type !== "group" || !conv.name) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid group conversation",
+      });
+    }
+
+    const inserted = await db
+      .insert(message)
+      .values({
+        content,
+        conversationId,
+        senderId: currentUser.id,
+      })
+      .returning({
+        id: message.id,
+        content: message.content,
+        createdAt: message.createdAt,
+      });
+
+    const newMessage = inserted[0];
+
+    if (!newMessage) {
+      throw new Error("Message insert failed");
+    }
+
+    const payload: GroupMessagePayload = {
+      id: newMessage.id,
+      content: newMessage.content,
+      createdAt: newMessage.createdAt,
+      senderId: currentUser.id,
+      senderUserName: currentUser.username,
+      avatar: null,
+      conversationId,
+      name: conv.name,
+      type: "group",
+    };
+
+    emitGroupMessage(payload);
+
+    return res.status(201).json({
+      success: true,
+      result: { ...payload, clientMessageId },
+    });
+  } catch (error) {
+    logger.error(
+      { userId: req.user?.id, err: error },
+      "Failed to send group message"
     );
     next(error);
   }
