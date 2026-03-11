@@ -9,6 +9,7 @@ import {
   message,
   user,
 } from "../db/schema";
+import { createGroupConversationBody } from "../schemas/conversation.schema";
 import { searchQuery } from "../schemas/user.schema";
 import { logger } from "../utils/pino";
 
@@ -244,6 +245,110 @@ export const searchConversation: RequestHandler<
     });
   } catch (error) {
     logger.error(error, "Unable to search username");
+    next(error);
+  }
+};
+
+export const createGroupConversation: RequestHandler<
+  unknown,
+  unknown,
+  createGroupConversationBody,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const currentUser = req.user;
+
+    if (!currentUser?.id) {
+      logger.warn("Unauthorized group creation attempt");
+      return res.status(401).json({
+        success: false,
+        message: "User not authorized",
+      });
+    }
+
+    const { name, member } = req.body;
+
+    if (!name || !Array.isArray(member) || member.length === 0) {
+      logger.warn(
+        { userId: currentUser.id, body: req.body },
+        "Invalid group creation request payload"
+      );
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request payload",
+      });
+    }
+
+    const foundUsers = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(inArray(user.id, member));
+
+    const foundIds = new Set(foundUsers.map((u) => u.id));
+    const missingIds = member.filter((id) => !foundIds.has(id));
+
+    if (missingIds.length > 0) {
+      logger.warn(
+        { userId: currentUser.id, missingIds },
+        "Group creation failed: some users not found"
+      );
+
+      return res.status(404).json({
+        success: false,
+        message: "Some users were not found",
+        missingUsers: missingIds,
+      });
+    }
+
+    const members = [...new Set([...member, currentUser.id])];
+
+    logger.info(
+      { userId: currentUser.id, members },
+      "All users verified, creating group"
+    );
+
+    const conversationId = await db.transaction(async (tx) => {
+      const [createdConversation] = await tx
+        .insert(conversation)
+        .values({
+          name,
+          type: "group",
+          avatar: null,
+          createdBy: currentUser.id,
+        })
+        .returning({ id: conversation.id });
+
+      type conversationParticipantsInsert =
+        typeof conversationParticipants.$inferInsert;
+
+      await tx.insert(conversationParticipants).values(
+        members.map((userId) => ({
+          conversationId: createdConversation.id,
+          userId,
+          role: userId === currentUser.id ? "admin" : "member",
+        })) as conversationParticipantsInsert[]
+      );
+
+      return createdConversation.id;
+    });
+
+    logger.info(
+      { userId: currentUser.id, conversationId },
+      "Group conversation created successfully"
+    );
+
+    return res.status(201).json({
+      success: true,
+      conversationId,
+      message: "Successfully created group conversation",
+    });
+  } catch (error) {
+    logger.error(
+      { userId: req.user?.id, err: error },
+      "Failed to create group"
+    );
+
     next(error);
   }
 };

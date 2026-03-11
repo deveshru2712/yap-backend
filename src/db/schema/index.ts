@@ -16,7 +16,7 @@ export const user = pgTable(
       .primaryKey()
       .$defaultFn(() => uuidv7()),
 
-    username: text("username").notNull(),
+    username: text("username").notNull().unique(),
 
     email: text("email").notNull().unique(),
 
@@ -35,7 +35,7 @@ export const user = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [uniqueIndex("users_username_idx").on(table.username)]
+  (table) => [index("users_username_idx").on(table.username)]
 );
 
 export const conversation = pgTable(
@@ -53,12 +53,17 @@ export const conversation = pgTable(
 
     avatar: text("avatar"),
 
+    createdBy: uuid("created_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
 
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("conversations_type_idx").on(table.type)]
@@ -78,6 +83,10 @@ export const conversationParticipants = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+
+    role: text("role", { enum: ["admin", "member"] })
+      .notNull()
+      .default("member"),
   },
   (table) => [
     index("conversation_participants_user_idx").on(table.userId),
@@ -117,6 +126,8 @@ export const message = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (table) => [
     index("messages_conversation_created_idx").on(
