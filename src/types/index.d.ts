@@ -5,6 +5,10 @@ interface AuthTokenPayload {
   tokenVersion: number;
 }
 
+type ConversationRow = {
+  conversationId: string;
+};
+
 interface DirectMessagePayload {
   id: string;
   senderId: string;

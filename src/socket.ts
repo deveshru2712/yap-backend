@@ -1,10 +1,13 @@
 import * as cookie from "cookie";
+import { eq } from "drizzle-orm";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 
 import { env } from "./config/env";
+import db from "./db/db";
+import { conversationParticipants } from "./db/schema/index";
 import { logger } from "./utils/pino";
 
 export const app = express();
@@ -68,19 +71,42 @@ io.use((socket, next) => {
   }
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   const user = socket.data.user;
 
-  // join there respective room to get
-  socket.join(user.id);
+  // join personal room
+  socket.join(`user:${user.id}`);
 
-  logger.info(
-    {
-      socketId: socket.id,
-      userId: user.id,
-    },
-    "User connected via socket"
-  );
+  try {
+    const conversations: ConversationRow[] = await db
+      .select({
+        conversationId: conversationParticipants.conversationId,
+      })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, user.id));
+
+    conversations.forEach((c) => {
+      socket.join(`conversation:${c.conversationId}`);
+    });
+
+    logger.info(
+      {
+        socketId: socket.id,
+        userId: user.id,
+        rooms: conversations.map((c) => c.conversationId),
+      },
+      "User joined conversation rooms"
+    );
+  } catch (error) {
+    logger.error(
+      {
+        socketId: socket.id,
+        userId: user.id,
+        error,
+      },
+      "Failed to fetch conversations"
+    );
+  }
 
   socket.on("disconnect", (reason) => {
     logger.info(
@@ -89,7 +115,7 @@ io.on("connection", (socket) => {
         userId: user.id,
         reason,
       },
-      "User disconnected from socket"
+      "User disconnected"
     );
   });
 });
