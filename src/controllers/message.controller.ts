@@ -334,7 +334,7 @@ export const fetchMessage: RequestHandler<
       .map((row) => ({
         id: row.messageId,
         senderId: row.senderId,
-        senderUsername: row.username,
+        senderUserName: row.username,
         content: row.content,
         createdAt: row.createdAt,
         conversationId: row.conversationId,
