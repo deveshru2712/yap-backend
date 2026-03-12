@@ -20,6 +20,7 @@ interface DirectMessagePayload {
   name: string;
   avatar: string | null;
   type: "direct";
+  clientMessageId: string;
 }
 
 interface GroupMessagePayload {
@@ -32,4 +33,5 @@ interface GroupMessagePayload {
   name: string;
   avatar: string | null;
   type: "group";
+  clientMessageId: string;
 }

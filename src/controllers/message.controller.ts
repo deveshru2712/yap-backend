@@ -177,6 +177,7 @@ export const sendDirectMessage: RequestHandler<
         name: receiver.name,
         avatar: receiver.avatar,
         type: "direct",
+        clientMessageId,
       });
 
       return res.status(201).json({
@@ -239,6 +240,7 @@ export const sendDirectMessage: RequestHandler<
       name: receiver.name,
       avatar: receiver.avatar,
       type: "direct",
+      clientMessageId,
     });
 
     return res.status(201).json({
@@ -453,6 +455,7 @@ export const sendGroupMessage: RequestHandler<
       conversationId,
       name: conv.name,
       type: "group",
+      clientMessageId,
     };
 
     emitGroupMessage(payload);

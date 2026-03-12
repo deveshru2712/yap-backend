@@ -34,73 +34,68 @@ export const fetchRecentConversation: RequestHandler = async (
       "other_participant"
     );
 
-    // DIRECT CONVERSATIONS
-    const direct = await db
-      .selectDistinctOn([conversation.id], {
-        conversationId: conversation.id,
-        latestMessage: message.content,
-        createdAt: message.createdAt,
-
-        userId: user.id,
-        name: user.username,
-        avatar: user.avatar,
-      })
-      .from(conversationParticipants)
-
-      .innerJoin(
-        conversation,
-        eq(conversationParticipants.conversationId, conversation.id)
-      )
-
-      .innerJoin(message, eq(message.conversationId, conversation.id))
-
-      .innerJoin(
-        otherParticipant,
-        eq(otherParticipant.conversationId, conversation.id)
-      )
-
-      .innerJoin(user, eq(user.id, otherParticipant.userId))
-
-      .where(
-        and(
-          eq(conversationParticipants.userId, currentUser.id),
-          eq(conversation.type, "direct"),
-          ne(otherParticipant.userId, currentUser.id)
+    const direct = (
+      await db
+        .selectDistinctOn([conversation.id], {
+          conversationId: conversation.id,
+          latestMessage: message.content,
+          createdAt: message.createdAt,
+          userId: user.id,
+          name: user.username,
+          avatar: user.avatar,
+        })
+        .from(conversationParticipants)
+        .innerJoin(
+          conversation,
+          eq(conversationParticipants.conversationId, conversation.id)
         )
-      )
-
-      .orderBy(conversation.id, desc(message.createdAt))
-
-      .limit(5);
-
-    // GROUP CONVERSATIONS
-    const group = await db
-      .selectDistinctOn([conversation.id], {
-        conversationId: conversation.id,
-        name: conversation.name,
-        avatar: conversation.avatar,
-        latestMessage: message.content,
-        createdAt: message.createdAt,
-      })
-      .from(conversationParticipants)
-
-      .innerJoin(
-        conversation,
-        eq(conversationParticipants.conversationId, conversation.id)
-      )
-
-      .innerJoin(message, eq(message.conversationId, conversation.id))
-
-      .where(
-        and(
-          eq(conversationParticipants.userId, currentUser.id),
-          eq(conversation.type, "group")
+        .innerJoin(message, eq(message.conversationId, conversation.id))
+        .innerJoin(
+          otherParticipant,
+          eq(otherParticipant.conversationId, conversation.id)
         )
-      )
+        .innerJoin(user, eq(user.id, otherParticipant.userId))
+        .where(
+          and(
+            eq(conversationParticipants.userId, currentUser.id),
+            eq(conversation.type, "direct"),
+            ne(otherParticipant.userId, currentUser.id)
+          )
+        )
+        .orderBy(conversation.id, desc(message.createdAt))
+        .limit(5)
+    ).map((c) => ({
+      ...c,
+      type: "direct" as const,
+    }));
 
-      .orderBy(conversation.id, desc(message.createdAt))
-
-      .limit(5);
+    const group = (
+      await db
+        .selectDistinctOn([conversation.id], {
+          conversationId: conversation.id,
+          name: conversation.name,
+          avatar: conversation.avatar,
+          latestMessage: message.content,
+          createdAt: message.createdAt,
+        })
+        .from(conversationParticipants)
+        .innerJoin(
+          conversation,
+          eq(conversationParticipants.conversationId, conversation.id)
+        )
+        .innerJoin(message, eq(message.conversationId, conversation.id))
+        .where(
+          and(
+            eq(conversationParticipants.userId, currentUser.id),
+            eq(conversation.type, "group")
+          )
+        )
+        .orderBy(conversation.id, desc(message.createdAt))
+        .limit(5)
+    ).map((c) => ({
+      ...c,
+      type: "group" as const,
+    }));
 
     res.status(200).json({
       success: true,
@@ -210,17 +205,33 @@ export const searchConversation: RequestHandler<
       }));
     }
 
-    const matchingGroup = await db
+    const latestMessages = db
       .select({
+        conversationId: message.conversationId,
+        content: message.content,
+        createdAt: message.createdAt,
+      })
+      .from(message)
+      .orderBy(desc(message.createdAt))
+      .as("latest_messages");
+
+    const matchingGroups = await db
+      .select({
+        conversationId: conversation.id,
         name: conversation.name,
         avatar: conversation.avatar,
         type: conversation.type,
-        conversationId: conversation.id,
+        latestMessage: latestMessages.content,
+        createdAt: latestMessages.createdAt,
       })
       .from(conversation)
       .innerJoin(
         conversationParticipants,
         eq(conversationParticipants.conversationId, conversation.id)
+      )
+      .leftJoin(
+        latestMessages,
+        eq(latestMessages.conversationId, conversation.id)
       )
       .where(
         and(
@@ -240,11 +251,11 @@ export const searchConversation: RequestHandler<
       success: true,
       result: {
         direct: resultUsers,
-        groups: matchingGroup,
+        group: matchingGroups,
       },
     });
   } catch (error) {
-    logger.error(error, "Unable to search username");
+    logger.error(error, "Unable to search conversation");
     next(error);
   }
 };
@@ -266,9 +277,9 @@ export const createGroupConversation: RequestHandler<
       });
     }
 
-    const { name, member } = req.body;
+    const { name, userId } = req.body;
 
-    if (!name || !Array.isArray(member) || member.length === 0) {
+    if (!name || !Array.isArray(userId) || userId.length === 0) {
       logger.warn(
         { userId: currentUser.id, body: req.body },
         "Invalid group creation request payload"
@@ -283,10 +294,10 @@ export const createGroupConversation: RequestHandler<
     const foundUsers = await db
       .select({ id: user.id })
       .from(user)
-      .where(inArray(user.id, member));
+      .where(inArray(user.id, userId));
 
     const foundIds = new Set(foundUsers.map((u) => u.id));
-    const missingIds = member.filter((id) => !foundIds.has(id));
+    const missingIds = userId.filter((id) => !foundIds.has(id));
 
     if (missingIds.length > 0) {
       logger.warn(
@@ -301,15 +312,15 @@ export const createGroupConversation: RequestHandler<
       });
     }
 
-    const members = [...new Set([...member, currentUser.id])];
+    const userIds = [...new Set([...userId, currentUser.id])];
 
     logger.info(
-      { userId: currentUser.id, members },
+      { userId: currentUser.id, userIds },
       "All users verified, creating group"
     );
 
-    const conversationId = await db.transaction(async (tx) => {
-      const [createdConversation] = await tx
+    const createdConversation = await db.transaction(async (tx) => {
+      const [conversationData] = await tx
         .insert(conversation)
         .values({
           name,
@@ -317,31 +328,45 @@ export const createGroupConversation: RequestHandler<
           avatar: null,
           createdBy: currentUser.id,
         })
-        .returning({ id: conversation.id });
+        .returning({
+          conversationId: conversation.id,
+          name: conversation.name,
+          type: conversation.type,
+          avatar: conversation.avatar,
+        });
 
       type conversationParticipantsInsert =
         typeof conversationParticipants.$inferInsert;
 
       await tx.insert(conversationParticipants).values(
-        members.map((userId) => ({
-          conversationId: createdConversation.id,
-          userId,
-          role: userId === currentUser.id ? "admin" : "member",
+        userIds.map((uid) => ({
+          conversationId: conversationData.conversationId,
+          userId: uid,
+          role: uid === currentUser.id ? "admin" : "user",
         })) as conversationParticipantsInsert[]
       );
 
-      return createdConversation.id;
+      return conversationData;
     });
 
     logger.info(
-      { userId: currentUser.id, conversationId },
+      {
+        userId: currentUser.id,
+        conversationId: createdConversation.conversationId,
+      },
       "Group conversation created successfully"
     );
 
     return res.status(201).json({
       success: true,
-      conversationId,
       message: "Successfully created group conversation",
+      conversation: [
+        {
+          ...createdConversation,
+          latestMessage: null,
+          createdAt: null,
+        },
+      ],
     });
   } catch (error) {
     logger.error(
